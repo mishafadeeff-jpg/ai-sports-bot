@@ -5,7 +5,7 @@ import os
 DB_PATH = os.path.join(os.path.dirname(__file__), "sports_bot.db")
 
 async def init_db():
-    """Инициализация таблиц базы данных."""
+    """Инициализация таблиц базы данных и автоматическая миграция колонок."""
     async with aiosqlite.connect(DB_PATH) as db:
         # 1. Таблица пользователей
         await db.execute("""
@@ -20,6 +20,17 @@ async def init_db():
             )
         """)
         
+        # Автоматическая миграция: добавляем колонки, если БД уже существовала без них
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN referred_by INTEGER DEFAULT 0")
+        except Exception:
+            pass  # Колонка уже существует
+            
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN referral_count INTEGER DEFAULT 0")
+        except Exception:
+            pass  # Колонка уже существует
+            
         # 2. Таблица подписок
         await db.execute("""
             CREATE TABLE IF NOT EXISTS subscriptions (
