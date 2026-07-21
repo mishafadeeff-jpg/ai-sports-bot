@@ -25,6 +25,47 @@ async def admin_panel(message: types.Message):
     )
     await message.answer(text, parse_mode="Markdown")
 
+@router.message(Command("admin_vip"))
+async def admin_give_vip(message: types.Message):
+    """Секретная команда выдачи VIP администратором: /admin_vip <user_id> [дней]"""
+    if not is_admin(message.from_user.id):
+        return
+        
+    args = message.text.split()
+    if len(args) < 2:
+        await message.answer("⚠️ Использование: `/admin_vip <user_id> [дней]`\nНапример: `/admin_vip 860392517 30`", parse_mode="Markdown")
+        return
+        
+    try:
+        target_user_id = int(args[1])
+        days = int(args[2]) if len(args) > 2 else 3650  # По умолчанию 10 лет
+    except ValueError:
+        await message.answer("⚠️ Неверный ID или количество дней.")
+        return
+        
+    # Выдаем подписку
+    await database.approve_payment(payment_id=-1, days_to_add=days)
+    
+    # Записываем в базу подписок вручную, если не было платежа
+    async with database.aiosqlite.connect(database.DB_PATH) as db:
+        import datetime
+        expire_date = (datetime.datetime.now() + datetime.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+        await db.execute(
+            "INSERT OR REPLACE INTO subscriptions (user_id, plan_key, expire_at, is_active) VALUES (?, ?, ?, 1)",
+            (target_user_id, "forever", expire_date)
+        )
+        await db.commit()
+        
+    await message.answer(f"👑 **VIP-доступ успешно выдан!**\n👤 ID: `{target_user_id}`\n📅 Срок: **{days} дней**", parse_mode="Markdown")
+    try:
+        await message.bot.send_message(
+            chat_id=target_user_id,
+            text="🎉 **Вам предоставлен VIP-доступ администратором!**\nТеперь все функции и ИИ-анализ доступны без ограничений!",
+            parse_mode="Markdown"
+        )
+    except Exception:
+        pass
+
 @router.callback_query(F.data.startswith("admin_approve:"))
 async def approve_payment_handler(callback: types.CallbackQuery):
     """Админ нажатием кнопки подтверждает платеж."""
