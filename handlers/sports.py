@@ -73,7 +73,8 @@ async def start_analysis_prompt(event: types.Message | types.CallbackQuery, stat
         await event.answer(msg, parse_mode="Markdown", reply_markup=cancel_kb)
 
 @router.message(MatchAnalysisStates.waiting_for_teams)
-async def process_match_input(message: types.Message, state: FSMContext):
+@router.message(F.text & ~F.text.startswith("/") & ~F.text.in_({"🌟 Прогноз Дня", "🔍 Анализ матча", "👑 VIP Подписка", "📊 Статистика проходимости", "❓ Помощь / О боте"}))
+async def process_match_input(message: types.Message, state: FSMContext = None):
     """Обрабатывает ввод команд и генерирует прогноз."""
     match_query = message.text.strip()
     user_id = message.from_user.id
