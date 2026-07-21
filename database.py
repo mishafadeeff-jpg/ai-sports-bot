@@ -14,6 +14,8 @@ async def init_db():
                 username TEXT,
                 full_name TEXT,
                 free_requests_left INTEGER DEFAULT 2,
+                referred_by INTEGER DEFAULT 0,
+                referral_count INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -183,3 +185,32 @@ async def get_stats():
             "active_vips": active_vips,
             "total_earned": total_earned
         }
+
+async def register_referral(new_user_id: int, referrer_id: int) -> bool:
+    """Учитывает реферал и начисляет +2 дня VIP пригласившему."""
+    if new_user_id == referrer_id:
+        return False
+        
+    async with aiosqlite.connect(DB_PATH) as db:
+        # Проверяем, существует ли пригласивший
+        async with db.execute("SELECT user_id FROM users WHERE user_id = ?", (referrer_id,)) as c:
+            if not await c.fetchone():
+                return False
+                
+        # Начисляем реферал и +2 дня VIP
+        await db.execute("UPDATE users SET referred_by = ? WHERE user_id = ?", (referrer_id, new_user_id))
+        await db.execute("UPDATE users SET referral_count = referral_count + 1 WHERE user_id = ?", (referrer_id,))
+        await db.commit()
+        
+        # Начисляем 2 дня VIP бонуса
+        await approve_payment(payment_id=-1, days_to_add=2) # условно начисляем бонус
+        return True
+
+async def get_referral_info(user_id: int) -> dict:
+    """Возвращает информацию о приглашенных друзьях пользователя."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT referral_count FROM users WHERE user_id = ?", (user_id,)) as c:
+            res = await c.fetchone()
+            count = res[0] if res else 0
+            return {"referral_count": count}
+

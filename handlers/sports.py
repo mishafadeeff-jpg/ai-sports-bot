@@ -48,6 +48,41 @@ async def get_daily_forecast_handler(event: types.Message | types.CallbackQuery)
     else:
         await event.answer(forecast_text, parse_mode="Markdown", reply_markup=kb)
 
+@router.message(F.text == "🎰 ИИ-Экспресс (3.00+)")
+@router.callback_query(F.data == "get_express_forecast")
+async def get_express_forecast_handler(event: types.Message | types.CallbackQuery):
+    """Выдает ИИ-Экспресс дня из 3 матчей."""
+    user_id = event.from_user.id
+    is_vip = await database.check_vip_status(user_id)
+    
+    if not is_vip:
+        can_request = await database.decrement_free_requests(user_id)
+        if not can_request:
+            msg = (
+                "🔒 **ИИ-Экспресс доступен в VIP!**\n\n"
+                "Оформите VIP-доступ по СБП всего от 490 ₽ или пригласите 1 друга по вашей ссылке!"
+            )
+            if isinstance(event, types.CallbackQuery):
+                await show_vip_menu(event)
+            else:
+                kb = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="👑 Оформить VIP СБП", callback_data="open_vip_menu")],
+                    [InlineKeyboardButton(text="🤝 Пригласить друга (Бесплатно)", callback_data="open_referral_menu")]
+                ])
+                await event.answer(msg, parse_mode="Markdown", reply_markup=kb)
+            return
+
+    express_text = ai_analyzer.get_express_forecast()
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⬅️ В главное меню", callback_data="open_main_menu")]
+    ])
+    
+    if isinstance(event, types.CallbackQuery):
+        await event.message.edit_text(express_text, parse_mode="Markdown", reply_markup=kb)
+    else:
+        await event.answer(express_text, parse_mode="Markdown", reply_markup=kb)
+
+
 @router.message(F.text == "🔍 Анализ матча")
 @router.callback_query(F.data == "start_match_analysis")
 async def start_analysis_prompt(event: types.Message | types.CallbackQuery, state: FSMContext):
