@@ -1,4 +1,4 @@
-import os
+mport os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -8,7 +8,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "8791637436:AAHF0JsK6shUlKszTmgrwQ6dYpLT8k_nY
 
 # Telegram ID Главного Админа (получателя чеков)
 # Твой ID или ID владельца бота (по умолчанию ставим 8791637436 / demo id, можно будет легко сменить)
-ADMIN_IDS = [int(id_str) for id_str in os.getenv("ADMIN_IDS", "720963162,8791637436").split(",") if id_str.strip()]
+ADMIN_IDS = [int(id_str) for id_str in os.getenv("ADMIN_IDS", "860392517,720963162,8791637436").split(",") if id_str.strip()]
 
 # Реквизиты для оплаты по СБП (меняй на свои)
 SBP_PHONE = os.getenv("SBP_PHONE", "+7 (922) 929-18-55")
