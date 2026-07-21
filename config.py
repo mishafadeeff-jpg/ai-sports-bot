@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Токен бота Telegram
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8791637436:AAHF0JsK6shUlKszTmgrwQ6dYpLT8k_nYHc")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8791637436:AAFpeP3TGx83f4JdVi2t0Exdl8gZ40Rite4")
 
 # Telegram ID Главного Админа (получателя чеков)
 # Твой ID или ID владельца бота (по умолчанию ставим 8791637436 / demo id, можно будет легко сменить)
