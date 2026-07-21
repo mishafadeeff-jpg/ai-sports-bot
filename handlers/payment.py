@@ -46,9 +46,12 @@ async def show_vip_menu(callback: types.CallbackQuery):
         
     await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=get_tariffs_keyboard())
 
+from aiogram.types import FSInputFile
+import os
+
 @router.callback_query(F.data.startswith("buy_plan:"))
 async def process_plan_selection(callback: types.CallbackQuery, state: FSMContext):
-    """Обрабатывает выбор конкретного тарифа и выводит реквизиты СБП."""
+    """Обрабатывает выбор конкретного тарифа, отправляет QR-код СБП."""
     plan_key = callback.data.split(":")[1]
     plan = config.PRICING_PLANS.get(plan_key)
     
@@ -62,14 +65,14 @@ async def process_plan_selection(callback: types.CallbackQuery, state: FSMContex
     payment_text = (
         f"💳 **ОПЛАТА ТАРИФА: {plan['title']}**\n"
         f"Сумма к оплате: **{plan['price']} ₽**\n\n"
-        f"📌 **РЕКВИЗИТЫ ДЛЯ ПЕРЕВОДА ПО СБП:**\n"
-        f"📱 Номер телефона: `{config.SBP_PHONE}`\n"
-        f"🏦 Банк: **{config.SBP_BANK}**\n"
+        f"📌 **РЕКВИЗИТЫ ДЛЯ ПЕРЕВОДА (БЕЗ ТЕЛЕФОНА):**\n"
+        f"📲 Сканируйте QR-код ниже в приложении вашего банка для перевода.\n"
+        f"🏦 Банк получателя: **{config.SBP_BANK}**\n"
         f"👤 Получатель: **{config.SBP_RECIPIENT}**\n\n"
         f"⚠️ **ИНСТРУКЦИЯ:**\n"
-        f"1. Переведите ровно **{plan['price']} ₽** по указанному номеру.\n"
-        f"2. Сделайте скриншот или фото чека об оплате.\n"
-        f"3. **Отправьте изображение чека прямо сюда в чат.**\n\n"
+        f"1. Откройте приложение вашего банка и выберите 'Оплата по QR-коду'.\n"
+        f"2. Отсканируйте QR-код ниже и переведите ровно **{plan['price']} ₽**.\n"
+        f"3. Сделайте скриншот чека и **отправьте изображение чека прямо сюда в чат.**\n\n"
         f"⏳ *После отправки чека администратор проверит платеж и активирует VIP-доступ в течение 2-5 минут.*"
     )
     
@@ -77,7 +80,15 @@ async def process_plan_selection(callback: types.CallbackQuery, state: FSMContex
         [InlineKeyboardButton(text="❌ Отменить покупку", callback_data="cancel_payment")]
     ])
     
-    await callback.message.edit_text(payment_text, parse_mode="Markdown", reply_markup=cancel_kb)
+    # Удаляем старое текстовое сообщение, чтобы красиво отправить новое с картинкой
+    await callback.message.delete()
+    
+    qr_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sbp_qr.png")
+    if os.path.exists(qr_path):
+        photo = FSInputFile(qr_path)
+        await callback.message.answer_photo(photo, caption=payment_text, parse_mode="Markdown", reply_markup=cancel_kb)
+    else:
+        await callback.message.answer(payment_text, parse_mode="Markdown", reply_markup=cancel_kb)
 
 @router.callback_query(F.data == "cancel_payment")
 async def cancel_payment_handler(callback: types.CallbackQuery, state: FSMContext):
