@@ -12,8 +12,8 @@ def get_main_reply_keyboard():
     kb = [
         [KeyboardButton(text="🌟 Прогноз Дня"), KeyboardButton(text="🎰 ИИ-Экспресс (3.00+)")],
         [KeyboardButton(text="🔍 Анализ матча"), KeyboardButton(text="👑 VIP Подписка")],
-        [KeyboardButton(text="🤝 Реферальная программа"), KeyboardButton(text="📊 Статистика")],
-        [KeyboardButton(text="❓ Помощь / О боте")]
+        [KeyboardButton(text="🤝 Реферальная программа"), KeyboardButton(text="🎁 Бонусы БК")],
+        [KeyboardButton(text="📊 Статистика"), KeyboardButton(text="❓ Помощь / О боте")]
     ]
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
@@ -124,6 +124,24 @@ async def referral_menu_handler(event: types.Message | types.CallbackQuery):
         await event.message.edit_text(text, parse_mode="Markdown", reply_markup=kb)
     else:
         await event.answer(text, parse_mode="Markdown", reply_markup=kb)
+
+@router.message(F.text == "🎁 Бонусы БК")
+async def bk_bonuses_handler(message: types.Message):
+    """Показывает эксклюзивные фрибеты и бонусы от БК."""
+    text = (
+        "🎁 **ЭКСКЛЮЗИВНЫЕ БОНУСЫ И ФРИБЕТЫ ОТ БУКМЕКЕРОВ** 🎁\n\n"
+        "Специально для пользователей **AI Sports Analyst** наши партнеры предоставляют стартовые фрибеты без депозита:\n\n"
+        "1. ⚽ **Winline:** Фрибет **10 000 ₽** без депозита!\n"
+        "   📌 Промокод: `AISPORTS`\n\n"
+        "2. 🏒 **Fonbet:** Бонус +100% к первому депозиту до **15 000 ₽**!\n\n"
+        "💡 *Регистрируйтесь по кнопкам ниже и забирайте бонусы для безопасных ставок по прогнозам нейросети:*"
+    )
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎁 Забрать 10 000 ₽ в Winline", url="https://winline.ru")],
+        [InlineKeyboardButton(text="🎁 Забрать 15 000 ₽ в Fonbet", url="https://fon.bet")],
+        [InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="open_main_menu")]
+    ])
+    await message.answer(text, parse_mode="Markdown", reply_markup=kb)
 
 @router.message(F.text == "❓ Помощь / О боте")
 async def help_handler(message: types.Message):

@@ -39,6 +39,7 @@ async def get_daily_forecast_handler(event: types.Message | types.CallbackQuery)
     forecast_text = ai_analyzer.get_daily_match_forecast()
     
     kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎁 Забрать Фрибет 10 000 ₽ на матч", url="https://winline.ru")],
         [InlineKeyboardButton(text="🔍 Проанализировать свой матч", callback_data="start_match_analysis")],
         [InlineKeyboardButton(text="⬅️ В главное меню", callback_data="open_main_menu")]
     ])
