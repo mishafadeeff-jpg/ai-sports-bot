@@ -77,6 +77,7 @@ async def process_plan_selection(callback: types.CallbackQuery, state: FSMContex
     )
     
     cancel_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=f"⭐️ Оплатить {plan['stars_price']} Stars (В 1 КЛИК)", callback_data=f"pay_stars:{plan_key}")],
         [InlineKeyboardButton(text="❌ Отменить покупку", callback_data="cancel_payment")]
     ])
     
@@ -164,3 +165,63 @@ async def process_receipt_photo(message: types.Message, state: FSMContext):
 async def process_invalid_receipt(message: types.Message):
     """Если отправил не фото."""
     await message.answer("Пожалуйста, отправьте именно **изображение/фото чека** (скриншот экрана оплаты).", parse_mode="Markdown")
+
+# ==========================================
+# 🌟 TELEGRAM STARS (ОФИЦИАЛЬНАЯ АВТО-ОПЛАТА B 1 КЛИК)
+# ==========================================
+from aiogram.types import LabeledPrice, PreCheckoutQuery
+
+@router.callback_query(F.data.startswith("pay_stars:"))
+async def send_stars_invoice(callback: types.CallbackQuery):
+    """Отправляет инвойс Telegram Stars для моментальной авто-оплаты."""
+    plan_key = callback.data.split(":")[1]
+    plan = config.PRICING_PLANS.get(plan_key)
+    
+    if not plan:
+        await callback.answer("Тариф не найден", show_alert=True)
+        return
+        
+    prices = [LabeledPrice(label=plan["title"], amount=plan["stars_price"])]
+    
+    await callback.message.answer_invoice(
+        title=f"VIP Подписка: {plan['title']}",
+        description=f"Моментальный доступ к ИИ-прогнозам на {plan['days']} дней.",
+        payload=f"plan:{plan_key}:{callback.from_user.id}",
+        currency="XTR", # Код валюты Telegram Stars
+        prices=prices,
+        start_parameter="vip_stars_buy"
+    )
+    await callback.answer()
+
+@router.pre_checkout_query()
+async def process_pre_checkout_query(pre_checkout_query: PreCheckoutQuery):
+    """Официальное авто-подтверждение платежа от Telegram."""
+    await pre_checkout_query.answer(ok=True)
+
+@router.message(F.successful_payment)
+async def process_successful_payment(message: types.Message):
+    """Автоматическая мгновенная выдача VIP подписки после оплаты Звездами."""
+    payload = message.successful_payment.invoice_payload
+    parts = payload.split(":")
+    plan_key = parts[1]
+    user_id = int(parts[2])
+    
+    plan = config.PRICING_PLANS.get(plan_key, config.PRICING_PLANS["month"])
+    
+    # Записываем платеж в базу и сразу одобряем
+    payment_id = await database.create_payment_request(
+        user_id=user_id,
+        plan_key=plan_key,
+        amount=plan["price"],
+        photo_file_id="TELEGRAM_STARS_AUTO"
+    )
+    await database.approve_payment(payment_id=payment_id, days_to_add=plan["days"])
+    
+    success_text = (
+        f"🎉 **ПОЗДРАВЛЯЕМ! ВАШ ПЛАТЕЖ УСПЕШНО ПРОВЕДЕН!** 🎉\n\n"
+        f"💎 **ВАМ АКТИВИРОВАН ТАРИФ:** {plan['title']}\n"
+        f"⚡ Теперь вам доступны все ИИ-прогнозы, VIP-экспрессы и лайв-сигналы без ограничений!\n\n"
+        f"Нажмите кнопку внизу для выбора матча."
+    )
+    
+    await message.answer(success_text, parse_mode="Markdown")

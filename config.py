@@ -21,18 +21,21 @@ PRICING_PLANS = {
         "title": "⚡ 1 Неделя VIP",
         "days": 7,
         "price": 490,
+        "stars_price": 250,
         "description": "Полный доступ к ИИ-прогнозам на 7 дней"
     },
     "month": {
         "title": "🔥 1 Месяц VIP",
         "days": 30,
         "price": 990,
+        "stars_price": 500,
         "description": "Выгодный тариф! 30 дней ИИ-аналитики"
     },
     "forever": {
         "title": "👑 Навсегда (VIP Club)",
-        "days": 3650,
+        "days": 3658,
         "price": 2490,
+        "stars_price": 1250,
         "description": "Вечный доступ ко всем прогнозам и лайв-сигналам"
     }
 }
